@@ -2,90 +2,99 @@ package ru.netology.patterns;
 
 import com.codeborne.selenide.Condition;
 
-import com.github.javafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.Keys;
 
 import java.time.Duration;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-
 
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.*;
 
 class FormCardTest {
-    private Faker faker;
-
-    private String generateDate(int addDays, String pattern) {
-        return LocalDate.now().plusDays(addDays).format(DateTimeFormatter.ofPattern(pattern));
-    }
 
     @BeforeEach
     public void setup() {
-        faker = new Faker(new Locale("ru"));
         open("http://localhost:9999");
     }
 
     @Test
-    void shouldPositiveResultTest1() {
-        $("[data-test-id=city] .input__control").setValue(faker.address().city());
-        String currentDate = generateDate(7, "dd.MM.yyyy");
+    @DisplayName("Should successful plan meeting")
+    void shouldSuccessfulPlanMeeting() {
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var firstMeetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue(faker.name().firstName());
-        $("[data-test-id=name] .input__control").sendKeys(Keys.chord(Keys.SPACE));
-        $("[data-test-id=name] .input__control").setValue(faker.name().lastName());
-        $("[data-test-id=phone] .input__control").setValue(faker.phoneNumber().phoneNumber());
+        $("[data-test-id=date] .input__control").setValue(firstMeetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=success-notification] .notification__content")
                 .shouldBe(visible, Duration.ofSeconds(15))
-                .shouldHave(Condition.exactText("Встреча успешно запланирована на " + currentDate));
+                .shouldHave(Condition.exactText("Встреча успешно запланирована на " + firstMeetingDate));
     }
 
     @Test
-    void shouldPositiveResultTest2() {
-        $("[data-test-id=city] .input__control").setValue("Тюмень");
-        String currentDate = generateDate(4, "dd.MM.yyyy");
+    @DisplayName("Should successful plan and replan meeting")
+    void shouldSuccessfulPlanAndReplanMeeting() {
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var firstMeetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        var daysToAddForSecondMeeting = 7;
+        var secondMeetingDate = DataGenerator.generateDate(daysToAddForSecondMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Пеатпраа Петров");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=date] .input__control").setValue(firstMeetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
-        $("[data-test-id=success-notification] .notification__content")
-                .shouldBe(visible, Duration.ofSeconds(15))
-                .shouldHave(Condition.exactText("Встреча успешно запланирована на " + currentDate));
-    }
-
-    @Test
-    void shouldPositiveResultTest3() {
-        $("[data-test-id=city] .input__control").setValue("Тюмень");
-        String currentDate = generateDate(4, "dd.MM.yyyy");
-        $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Пеатпраа Петров");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
-        $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=replan-notification] .notification__content")
                 .shouldBe(visible, Duration.ofSeconds(15))
                 .shouldHave(Condition.exactText("У вас уже запланирована встреча на другую дату. Перепланировать?\n" +
                         "\n" +
                         "Перепланировать"));
+        $("[role=button]").click();
+        $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
+        $("[data-test-id=date] .input__control").setValue(secondMeetingDate);
+        $("[data-test-id=success-notification] .notification__content")
+                .shouldBe(visible, Duration.ofSeconds(15))
+                .shouldHave(Condition.exactText("Встреча успешно запланирована на " + secondMeetingDate));
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Date (+ 0 Days) With Error Message")
+    void shouldFailValidationForDateWithErrorMessage0() {
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 0;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
+        $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
+        $(".checkbox").click();
+        $(".button").click();
+        $("[data-test-id=date] .input_invalid")
+                .shouldBe(visible, Duration.ofSeconds(15))
+                .shouldHave(Condition.exactText("Заказ на выбранную дату невозможен"));
+    }
+
+    @Test
+    @DisplayName("Should Fail Validation For Date (+ 1 Day) With Error Message")
     void shouldFailValidationForDateWithErrorMessage1() {
-        $("[data-test-id=city] .input__control").setValue("Тюмень");
-        String currentDate = generateDate(0, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 1;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петр Петров");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=date] .input_invalid")
@@ -94,13 +103,16 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Date(+2 Days) With Error Message")
     void shouldFailValidationForDateWithErrorMessage2() {
-        $("[data-test-id=city] .input__control").setValue("Тюмень");
-        String currentDate = generateDate(1, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 2;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петр Петров");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=date] .input_invalid")
@@ -109,28 +121,16 @@ class FormCardTest {
     }
 
     @Test
-    void shouldFailValidationForDateWithErrorMessage3() {
-        $("[data-test-id=city] .input__control").setValue("Тюмень");
-        String currentDate = generateDate(2, "dd.MM.yyyy");
-        $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петров Сидоров Петр");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
-        $(".checkbox").click();
-        $(".button").click();
-        $("[data-test-id=date] .input_invalid")
-                .shouldBe(visible, Duration.ofSeconds(15))
-                .shouldHave(Condition.exactText("Заказ на выбранную дату невозможен"));
-    }
-
-    @Test
+    @DisplayName("Should Fail Validation For City With Error Message 1")
     void shouldFailValidationForCityWithErrorMessage1() {
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 2;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
         $("[data-test-id=city] .input__control").setValue("Лангепас");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петров Сидоров Петр");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=city] .input__sub")
@@ -139,13 +139,16 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For City With Error Message 2")
     void shouldFailValidationForCityWithErrorMessage2() {
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
         $("[data-test-id=city] .input__control").setValue("");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петров Сидоров Петр");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=city] .input__sub")
@@ -154,13 +157,17 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Name With Error Message 1")
     void shouldFailValidationForNameWithErrorMessage1() {
-        $("[data-test-id=city] .input__control").setValue("Нарьян-Мар");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var invalidUser = DataGenerator.Registration.generateUser("en");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Petrov Oleg");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(invalidUser.getName());
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=name] .input__sub")
@@ -169,13 +176,16 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Name With Error Message 2")
     void shouldFailValidationForNameWithErrorMessage2() {
-        $("[data-test-id=city] .input__control").setValue("Нарьян-Мар");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
         $("[data-test-id=name] .input__control").setValue("57657665/*/-*?*?::?&&^^*%$%#");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=name] .input__sub")
@@ -184,13 +194,16 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Name With Error Message 3")
     void shouldFailValidationForNameWithErrorMessage3() {
-        $("[data-test-id=city] .input__control").setValue("Нарьян-Мар");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
         $("[data-test-id=name] .input__control").setValue("");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=phone] .input__control").setValue(validUser.getPhone());
         $(".checkbox").click();
         $(".button").click();
         $("[data-test-id=name] .input__sub")
@@ -199,12 +212,15 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Phone With Error Message 1")
     void shouldFailValidationForPhoneWithErrorMessage1() {
-        $("[data-test-id=city] .input__control").setValue("Нарьян-Мар");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петров Сидоров Петр");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
         $("[data-test-id=phone] .input__control").setValue("+7901234567");
         $(".checkbox").click();
         $(".button").click();
@@ -214,12 +230,15 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Phone With Error Message 2")
     void shouldFailValidationForPhoneWithErrorMessage2() {
-        $("[data-test-id=city] .input__control").setValue("Нарьян-Мар");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петров Сидоров Петр");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
         $("[data-test-id=phone] .input__control").setValue("");
         $(".checkbox").click();
         $(".button").click();
@@ -228,14 +247,16 @@ class FormCardTest {
                 .shouldHave(Condition.exactText("Поле обязательно для заполнения"));
     }
 
-
     @Test
+    @DisplayName("Should Fail Validation For All Data With Error Message")
     void shouldFailValidationForAllDataWithErrorMessage() {
-        $("[data-test-id=city] .input__control").setValue("Tokio");
-        String currentDate = generateDate(5, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("en");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Grigory Petrov");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
         $("[data-test-id=phone] .input__control").setValue("+44444");
         $(".checkbox").click();
         $(".button").click();
@@ -245,16 +266,21 @@ class FormCardTest {
     }
 
     @Test
+    @DisplayName("Should Fail Validation For Click Checkbox With Error Message")
     void shouldFailValidationForClickCheckboxWithErrorMessage() {
-        $("[data-test-id=city] .input__control").setValue("Тюмень");
-        String currentDate = generateDate(4, "dd.MM.yyyy");
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 4;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] .input__control").setValue(validUser.getCity());
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
-        $("[data-test-id=date] .input__control").setValue(currentDate);
-        $("[data-test-id=name] .input__control").setValue("Петр Петров");
-        $("[data-test-id=phone] .input__control").setValue("+79012345678");
+        $("[data-test-id=date] .input__control").setValue(meetingDate);
+        $("[data-test-id=name] .input__control").setValue(validUser.getName());
+        $("[data-test-id=phone] .input__control").setValue("+9130002211");
         $(".button").click();
         $(".checkbox.input_invalid")
                 .shouldBe(visible, Duration.ofSeconds(15))
                 .shouldHave(Condition.exactText("Я соглашаюсь с условиями обработки и использования моих персональных данных"));
     }
 }
+
+
