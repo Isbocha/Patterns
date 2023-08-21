@@ -199,7 +199,7 @@ class FormCardTest {
     }
 
     @Test
-    void shouldFailValidationForPhoneWithErrorMessage1() {//написать баг репорт пропускает короткий номер
+    void shouldFailValidationForPhoneWithErrorMessage1() {
         $("[data-test-id=city] .input__control").setValue("Нарьян-Мар");
         String currentDate = generateDate(5, "dd.MM.yyyy");
         $("[data-test-id=date] .input__control").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
